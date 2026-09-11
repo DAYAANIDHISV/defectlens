@@ -25,3 +25,7 @@ docs/heatmaps_full.png
 outputs/far_away_examples.png
 outputs/stress_table.md
 outputs/stress_results.json
+
+# Double-click helpers for this laptop, and the team's own guides
+*.command
+HOW-TO-PRESENT.md
