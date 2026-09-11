@@ -28,6 +28,14 @@ averaged, each looking at 16 views of every photo.
 - **Limitations:** very small parts vary most between training runs; over-confidence when glare
   hides a component; synthetic data only. Details in `REPORT.md` §9.
 
+## submission.csv
+
+The hidden-test images were not released to participants, so `submission.csv` holds predictions
+for the **200 validation images**. It was made by the three models trained **without** those images
+(`full-v3`, `full-v3-s1`, `full-v3-s2`, same recipe as the final models), so the predictions are
+genuinely held out: macro-F1 **1.000**. Given the hidden-test folder, `python predict.py <folder>`
+writes the file for it with the three final models.
+
 ## Run it
 
 ```bash
