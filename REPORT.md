@@ -215,6 +215,23 @@ T < 1** (`predict.py`, `temperature_for`). The stress test is our own model of t
 and sharpening confidence on the strength of our own model is the risky direction: an over-confident
 wrong answer lets a defective part pass. Confidence is only ever allowed to become more cautious.
 
+### 6.6 What to expect on the hidden test
+Our numbers should be read as an **upper bound**, for three reasons:
+
+1. **Validation is easy.** Every model we trained scores 0.95–1.00 on it, the naive one 0.985. A
+   perfect validation score is a sanity check, not evidence of robustness.
+2. **The stress test is ours, and we developed against it.** Three rounds of fixes targeted the
+   conditions it found weak, and the zoomed views (§6.3a) were chosen after seeing its weakest
+   condition. Numbers on a test you have tuned against are optimistic.
+3. **Unanticipated changes hurt.** The ablations (§6.4) are our only measurement of a change the
+   model never trained on: without orientation training, parts turned 90° scored 0.563 (from
+   1.000); without camera effects, squeezed JPEGs scored 0.702 (from 0.990). If the private test
+   contains a kind of change we did not simulate, a drop of that size on that portion is plausible.
+
+The four conditions no version of our simulator ever made (tilted camera, motion blur, shadow,
+low resolution) score 0.99–1.00, which is encouraging but covers only four kinds of change, all of
+them designed by us.
+
 ## 7. Error analysis
 
 **Three rounds of stress → diagnose → fix.** The first two found faults that validation (1.000) had

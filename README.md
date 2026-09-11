@@ -18,6 +18,14 @@ validation set alone, which turned out to be too easy to tell a robust model fro
 *One model* is a single view, averaged over three training seeds. *Submitted* is three seeds
 averaged, each looking at 16 views of every photo.
 
+**How to read these numbers.** The validation score is real — the models never trained on those
+images — but it proves little: validation is easy, and even the naive model reaches 0.985. The
+stress-test numbers come from **our own** test, which we used while building (three rounds of
+fixes, and the zoomed views were chosen after seeing its weak spot), so they are an **optimistic**
+estimate. **We expect the hidden-test score to be lower.** The best evidence of how much: in our
+ablations, a kind of change the model had never trained on cost it 29–44 points on that change
+(`REPORT.md` §6.4, §6.6).
+
 - **Preprocessing:** any image → RGB, padded square, 128 × 128; the model upsamples to 224 and
   applies ImageNet normalisation.
 - **Model:** ResNet18, all layers fine-tuned, 30 epochs, AdamW, label smoothing 0.1. Three copies
