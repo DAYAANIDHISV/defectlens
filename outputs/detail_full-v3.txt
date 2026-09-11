@@ -1,0 +1,45 @@
+MODEL full-v3
+
+one view : macro-F1 over all 6000 stressed photos = 0.987
+8 views  : macro-F1 over all 6000 stressed photos = 0.993
+
+== validation as given (8 views) ==
+class              precision  recall    f1
+normal                  1.00    1.00  1.00
+scratch                 1.00    1.00  1.00
+dent                    1.00    1.00  1.00
+contamination           1.00    1.00  1.00
+misalignment            1.00    1.00  1.00
+missing_component       1.00    1.00  1.00
+MACRO-F1                              1.000   (accuracy 1.000)
+
+confusion (rows = truth, columns = prediction)
+                   norma scrat  dent conta misal missi
+normal                34     0     0     0     0     0
+scratch                0    34     0     0     0     0
+dent                   0     0    33     0     0     0
+contamination          0     0     0    33     0     0
+misalignment           0     0     0     0    33     0
+missing_component      0     0     0     0     0    33
+
+== every stress condition pooled (8 views) ==
+class              precision  recall    f1
+normal                  0.99    0.98  0.98
+scratch                 1.00    0.99  1.00
+dent                    1.00    0.99  0.99
+contamination           0.98    1.00  0.99
+misalignment            1.00    1.00  1.00
+missing_component       0.99    1.00  1.00
+MACRO-F1                              0.993   (accuracy 0.993)
+
+confusion (rows = truth, columns = prediction)
+                   norma scrat  dent conta misal missi
+normal               995     3     1    16     0     5
+scratch                3  1013     1     2     0     1
+dent                   8     0   977     5     0     0
+contamination          0     0     0   990     0     0
+misalignment           0     0     0     0   990     0
+missing_component      0     0     0     0     0   990
+
+calibration: temperature T = 0.50
+  expected calibration error before 0.088 -> after 0.001   (0 = confidence is perfectly honest)

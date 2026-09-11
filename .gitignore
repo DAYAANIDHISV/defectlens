@@ -1,0 +1,27 @@
+# Python environment and caches
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.claude/
+
+# The organisers' images: the rules say not to share organiser data
+data/
+
+# Model weights are large; train.py rebuilds them (README, "Run it")
+models/*.pt
+models/*.pth
+
+# Working files that are not part of the submission
+*.log
+LEARN.md
+TEAM-BRIEF.md
+make_docs.py
+package.py
+submission/
+docs/challenge/
+docs/team/
+docs/heatmaps_full.png
+outputs/far_away_examples.png
+outputs/stress_table.md
+outputs/stress_results.json

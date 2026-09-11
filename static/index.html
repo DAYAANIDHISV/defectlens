@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DefectLens · inspection station</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --ink: #1d2330; --muted: #5b6475; --line: #dde1e8;
+    --pass: #1a7f37; --pass-bg: #e6f4ea; --reject: #b42318; --reject-bg: #fdecea;
+    --review: #8a5300; --review-bg: #fff4de; --accent: #2f5bd3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  header { display: flex; align-items: baseline; gap: 16px; padding: 18px 28px; background: var(--ink); color: #fff; }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
+  header span { color: #b8c0d0; font-size: 13px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 22px 20px 60px; display: grid; gap: 18px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+  .card h2 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+  .top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; }
+  @media (max-width: 860px) { .top { grid-template-columns: 1fr; } }
+  .viewer { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .viewer figure { margin: 0; }
+  .viewer img { width: 100%; aspect-ratio: 1; image-rendering: pixelated; border-radius: 6px; background: #eceff3; border: 1px solid var(--line); display: block; }
+  .viewer figcaption { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .trail { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 20px; }
+  .trail b { color: var(--ink); font-weight: 600; }
+  .drop { border: 2px dashed #b9c1cf; border-radius: 10px; padding: 18px; text-align: center; color: var(--muted); cursor: pointer; transition: background .15s; }
+  .drop.over { background: #eaf0ff; border-color: var(--accent); }
+  .drop strong { color: var(--ink); }
+  .verdict { border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; }
+  .verdict .word { font-size: 30px; font-weight: 800; letter-spacing: 1px; }
+  .verdict .why { font-size: 14px; margin-top: 2px; }
+  .verdict.PASS { background: var(--pass-bg); color: var(--pass); }
+  .verdict.REJECT { background: var(--reject-bg); color: var(--reject); }
+  .verdict.REVIEW { background: var(--review-bg); color: var(--review); }
+  .verdict.idle { background: #eef0f4; color: var(--muted); }
+  .bars { display: grid; gap: 7px; }
+  .bar { display: grid; grid-template-columns: 140px 1fr 52px; align-items: center; gap: 10px; font-size: 13px; }
+  .bar .track { height: 12px; background: #eceff3; border-radius: 6px; overflow: hidden; }
+  .bar .fill { height: 100%; background: #9aa6bb; border-radius: 6px; transition: width .25s; }
+  .bar.top-choice .fill { background: var(--accent); }
+  .bar.top-choice { font-weight: 700; }
+  .bar .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: inherit; font-size: 13.5px; padding: 7px 12px; border-radius: 7px; border: 1px solid #c4cbd8; background: #fff; color: var(--ink); cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { color: #fff; filter: brightness(1.1); }
+  .samples { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
+  .samples button { padding: 4px; display: grid; gap: 3px; justify-items: center; font-size: 11.5px; }
+  .samples img { width: 72px; height: 72px; image-rendering: pixelated; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+  td img { width: 44px; height: 44px; image-rendering: pixelated; border-radius: 4px; display: block; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; }
+  .pill.PASS { background: var(--pass-bg); color: var(--pass); }
+  .pill.REJECT { background: var(--reject-bg); color: var(--reject); }
+  .pill.REVIEW { background: var(--review-bg); color: var(--review); }
+  .summary { display: flex; gap: 14px; flex-wrap: wrap; margin: 6px 0 12px; font-size: 13.5px; }
+  .scroll { max-height: 420px; overflow: auto; }
+  .busy { opacity: .55; pointer-events: none; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>DefectLens · inspection station</h1>
+  <span id="model-info">loading…</span>
+</header>
+
+<main>
+  <section class="top">
+    <div class="card" id="viewer-card">
+      <h2>Part</h2>
+      <div class="viewer">
+        <figure><img id="photo" alt="the part being inspected"><figcaption>photo the model sees</figcaption></figure>
+        <figure><img id="heat" alt="heat-map of where the model looked"><figcaption>where the model looked (heat-map)</figcaption></figure>
+      </div>
+      <div class="trail" id="trail">Drop a photo below, or pick a sample.</div>
+      <div class="drop" id="drop" style="margin-top:12px">
+        <strong>Drop part photos here</strong> or click to choose.<br>
+        One photo inspects it; several run a batch and build <code>submission.csv</code>.
+        <input type="file" id="file" accept="image/*" multiple hidden>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="folder-btn">Inspect a whole folder…</button>
+        <input type="file" id="folder" webkitdirectory multiple hidden>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Verdict</h2>
+      <div class="verdict idle" id="verdict"><div class="word">—</div><div class="why">waiting for a part</div></div>
+      <div class="bars" id="bars"></div>
+      <div class="note" id="threshold-note"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Stress it — change the photo and inspect again</h2>
+    <div class="buttons" id="stress"></div>
+    <div class="note">Each press changes the current photo (they stack). These are the kinds of change the hidden test makes — lighting, orientation, backgrounds — so the answer should hold. <button id="reset" disabled>Back to the original</button></div>
+  </section>
+
+  <section class="card">
+    <h2>Samples from the validation set</h2>
+    <div class="samples" id="samples"></div>
+  </section>
+
+  <section class="card" id="batch-card" hidden>
+    <h2>Batch</h2>
+    <div class="summary" id="summary"></div>
+    <div class="row" style="margin-bottom:10px"><button class="primary" id="download">Download submission.csv</button></div>
+    <div class="scroll"><table><thead><tr><th></th><th>sample_id</th><th>answer</th><th>confidence</th><th>verdict</th></tr></thead><tbody id="rows"></tbody></table></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let original = null, current = null, trail = [], csvText = "", reviewBelow = 0.6;
+
+async function blobFrom(dataUrl) { return (await fetch(dataUrl)).blob(); }
+
+async function inspect(blob, disturb) {
+  $("viewer-card").classList.add("busy");
+  try {
+    const form = new FormData();
+    form.append("image", blob, "part.png");
+    if (disturb) form.append("disturb", disturb);
+    const res = await fetch("/api/inspect", { method: "POST", body: form });
+    if (!res.ok) throw new Error(await res.text());
+    const d = await res.json();
+    $("photo").src = d.image;
+    $("heat").src = d.heatmap;
+    current = await blobFrom(d.image);
+    showVerdict(d);
+  } catch (err) {
+    $("trail").textContent = "Could not inspect that photo: " + err.message;
+  } finally {
+    $("viewer-card").classList.remove("busy");
+  }
+}
+
+function showVerdict(d) {
+  const v = $("verdict");
+  v.className = "verdict " + d.verdict;
+  const pct = Math.round(d.confidence * 100);
+  const why = d.verdict === "PASS" ? `no defect found · ${pct}% sure`
+            : d.verdict === "REJECT" ? `${d.label.replace("_", " ")} · ${pct}% sure`
+            : `not sure enough (${pct}%) — best guess ${d.label.replace("_", " ")}; a person should look`;
+  v.innerHTML = `<div class="word">${d.verdict}</div><div class="why">${why}</div>`;
+  $("bars").innerHTML = d.probabilities.map(p => `
+    <div class="bar ${p.class === d.label ? "top-choice" : ""}">
+      <span>${p.class.replace("_", " ")}</span>
+      <span class="track"><span class="fill" style="width:${(p.p * 100).toFixed(1)}%"></span></span>
+      <span class="num">${(p.p * 100).toFixed(1)}%</span>
+    </div>`).join("");
+  $("trail").innerHTML = trail.length ? "original → " + trail.map(t => `<b>${t}</b>`).join(" → ") : "original photo";
+  $("reset").disabled = trail.length === 0;
+}
+
+async function start(blob) {
+  original = blob; trail = [];
+  await inspect(blob, null);
+}
+
+async function runBatch(files) {
+  const images = [...files].filter(f => /\.(png|jpe?g|bmp)$/i.test(f.name));
+  if (!images.length) return;
+  $("batch-card").hidden = false;
+  $("summary").textContent = `inspecting ${images.length} photos…`;
+  const form = new FormData();
+  images.forEach(f => form.append("images", f, f.name));
+  const res = await fetch("/api/batch", { method: "POST", body: form });
+  const d = await res.json();
+  csvText = d.csv;
+  const count = (key, val) => d.rows.filter(r => r[key] === val).length;
+  $("summary").innerHTML = `<b>${d.rows.length} photos</b>
+    <span class="pill PASS">PASS ${count("verdict", "PASS")}</span>
+    <span class="pill REJECT">REJECT ${count("verdict", "REJECT")}</span>
+    <span class="pill REVIEW">REVIEW ${count("verdict", "REVIEW")}</span>`;
+  $("rows").innerHTML = d.rows.map(r => `<tr>
+    <td><img src="${r.thumb}" alt=""></td><td>${r.id}</td><td>${r.label}</td>
+    <td>${(r.confidence * 100).toFixed(1)}%</td><td><span class="pill ${r.verdict}">${r.verdict}</span></td></tr>`).join("");
+  $("batch-card").scrollIntoView({ behavior: "smooth" });
+}
+
+function handleFiles(files) {
+  if (!files || !files.length) return;
+  if (files.length === 1) start(files[0]); else runBatch(files);
+}
+
+$("drop").onclick = () => $("file").click();
+$("file").onchange = (e) => handleFiles(e.target.files);
+$("folder-btn").onclick = () => $("folder").click();
+$("folder").onchange = (e) => runBatch(e.target.files);
+$("drop").ondragover = (e) => { e.preventDefault(); $("drop").classList.add("over"); };
+$("drop").ondragleave = () => $("drop").classList.remove("over");
+$("drop").ondrop = (e) => { e.preventDefault(); $("drop").classList.remove("over"); handleFiles(e.dataTransfer.files); };
+$("reset").onclick = () => { if (original) start(original); };
+$("download").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csvText], { type: "text/csv" }));
+  a.download = "submission.csv";
+  a.click();
+};
+
+(async function init() {
+  const info = await (await fetch("/api/info")).json();
+  reviewBelow = info.review_below;
+  $("model-info").textContent = "model: " + info.models.map(m => `${m.name} (T=${m.temperature})`).join(" + ")
+    + " · 8-view averaging · heat-maps by Grad-CAM";
+  $("threshold-note").textContent = `Below ${Math.round(reviewBelow * 100)}% confidence the station answers REVIEW instead of guessing: an unsure part goes to a person rather than being passed or scrapped by the machine.`;
+  $("stress").innerHTML = info.disturbances.map(n => `<button data-d="${n}" disabled>${n}</button>`).join("");
+  document.querySelectorAll("#stress button").forEach(b => b.onclick = async () => {
+    if (!current) return;
+    trail.push(b.dataset.d);
+    await inspect(current, b.dataset.d);
+  });
+  const samples = await (await fetch("/api/samples")).json();
+  $("samples").innerHTML = samples.map((s, i) => `<button data-i="${i}" title="${s.class}"><img src="${s.image}" alt="${s.class}">${s.class.replace("_", " ")}</button>`).join("");
+  document.querySelectorAll("#samples button").forEach(b => b.onclick = async () => {
+    await start(await blobFrom(samples[+b.dataset.i].image));
+    document.querySelectorAll("#stress button").forEach(x => x.disabled = false);
+  });
+  $("file").addEventListener("change", () => document.querySelectorAll("#stress button").forEach(x => x.disabled = false));
+  $("drop").addEventListener("drop", () => document.querySelectorAll("#stress button").forEach(x => x.disabled = false));
+})();
+</script>
+</body>
+</html>
