@@ -44,6 +44,13 @@ for the **200 validation images**. It was made by the three models trained **wit
 genuinely held out: macro-F1 **1.000**. Given the hidden-test folder, `python predict.py <folder>`
 writes the file for it with the three final models.
 
+## Run it in Google Colab
+
+[**Open DefectLens_colab.ipynb in Colab**](https://colab.research.google.com/github/DAYAANIDHISV/defectlens/blob/main/DefectLens_colab.ipynb):
+downloads the code and the organisers' practice data, shows the shift simulator, trains our recipe and
+the naive baseline, runs the stress test, writes a CSV and draws heat-maps. Choose a T4 GPU runtime,
+then Run all (about 6–8 minutes).
+
 ## Run it
 
 ```bash
