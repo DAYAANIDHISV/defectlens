@@ -77,6 +77,9 @@ writes the same file for it with the three final models.
 
 ## Run it on another computer
 
+**New to all of this?** [SETUP.md](SETUP.md) walks through every step — installing Python,
+downloading the project, starting the station — for Mac and Windows.
+
 Three ways, from least to most effort. You need **Python 3.10 or newer** for options 2 and 3
 (python.org); a GPU speeds up training but the station runs fine without one.
 
@@ -166,8 +169,14 @@ To repeat the experiments: `train.py --name plain --plain` (the naive baseline),
 | `app.py`, `static/index.html` | the inspection station (Flask) |
 | `preview_shifts.py`, `show_heatmaps.py` | the figures in `docs/` |
 | `DefectLens_colab.ipynb` | the whole pipeline in Google Colab |
+| `SETUP.md` | step-by-step setup for beginners (Mac and Windows) |
 | `REPORT.md`, `REPORT.pdf` | the technical report |
 | `outputs/` | every stress table, the per-epoch training logs, the error analysis |
+
+## Licence
+
+[MIT](LICENSE): anyone may use, change and share the code, keeping the copyright notice. It covers
+the code in this repository only — the organisers' images are theirs and are not included.
 
 ## Acknowledgements
 
