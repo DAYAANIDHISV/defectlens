@@ -1,6 +1,9 @@
 # DefectLens — technical report
 
-**Track:** DefectLens, industrial visual inspection · **AI ARENA 2026**
+**AI ARENA 2026** — the 8-hour AI/ML hackathon of DRESTEIN'26 (17th National Level Intercollegiate
+Technical and Management Fest), Department of Artificial Intelligence and Machine Learning ·
+**Track:** DefectLens, industrial visual inspection · **Team 18, SMVEC** ·
+Challenge and data: [sanjai-umashankar/AI-Arena-AIML-Hackathon-2026](https://github.com/sanjai-umashankar/AI-Arena-AIML-Hackathon-2026)
 
 **In short:** a pretrained ResNet18 fine-tuned on *disturbed* copies of the training photos, measured
 by a 29-condition stress test rather than by the validation set alone, and delivered as an

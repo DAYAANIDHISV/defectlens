@@ -1,12 +1,25 @@
 # DefectLens — robust visual defect inspection
 
-AI ARENA 2026 · DefectLens track. Six classes: `normal`, `scratch`, `dent`, `contamination`,
-`misalignment`, `missing_component`.
+> Built in eight hours at **AI ARENA 2026**, the AI/ML hackathon of **DRESTEIN'26** (17th National
+> Level Intercollegiate Technical and Management Fest), presented by the Department of Artificial
+> Intelligence and Machine Learning. **DefectLens track · Team 18 · SMVEC.**
+> Challenge and data: [sanjai-umashankar/AI-Arena-AIML-Hackathon-2026](https://github.com/sanjai-umashankar/AI-Arena-AIML-Hackathon-2026)
+
+An inspection station for factory parts. Give it a photo and it answers **PASS**, **REJECT** (and
+which defect) or **REVIEW** (not sure — a person should look), and shows a heat-map of where on the
+part it looked. Six classes: `normal`, `scratch`, `dent`, `contamination`, `misalignment`,
+`missing_component`.
+
+![Photo and heat-map, two per class: the model looks at the defect, not the background](docs/heatmaps_final.png)
+
+**The challenge:** the organisers warned that new photos would change "lighting, orientation,
+backgrounds and defect presentation". So the task is not to score well on the photos we were given
+— that turned out to be easy — but to keep working when the photos look different.
 
 **Approach:** an ImageNet-pretrained ResNet18, fine-tuned on training photos that a *shift
-simulator* disturbs at random (orientation, lighting, background, glare, camera quality), because
-the private test changes exactly those. It is judged by a **29-condition stress test**, not by the
-validation set alone, which turned out to be too easy to tell a robust model from a fragile one.
+simulator* disturbs at random (orientation, lighting, background, glare, camera quality). It is
+judged by a **29-condition stress test**, not by the validation set alone, which turned out to be
+too easy to tell a robust model from a fragile one.
 
 | macro-F1 | naive model | ours, one model | **ours, submitted** |
 |---|---:|---:|---:|
@@ -22,7 +35,7 @@ averaged, each looking at 16 views of every photo.
 images — but it proves little: validation is easy, and even the naive model reaches 0.985. The
 stress-test numbers come from **our own** test, which we used while building (three rounds of
 fixes, and the zoomed views were chosen after seeing its weak spot), so they are an **optimistic**
-estimate. **We expect the hidden-test score to be lower.** The best evidence of how much: in our
+estimate: expect lower scores on genuinely new photos. The best evidence of how much: in our
 ablations, a kind of change the model had never trained on cost it 29–44 points on that change
 (`REPORT.md` §6.4, §6.6).
 
@@ -36,34 +49,58 @@ ablations, a kind of change the model had never trained on cost it 29–44 point
 - **Limitations:** very small parts vary most between training runs; over-confidence when glare
   hides a component; synthetic data only. Details in `REPORT.md` §9.
 
+## What the shift simulator and the stress test look like
+
+One part per class under each training disturbance, then three random training copies:
+
+![The shift simulator](docs/shift_examples.png)
+
+The 29 stress conditions, on a scratched part and a missing component:
+
+![The stress conditions](docs/stress_conditions.png)
+
+**Three rounds of stress → diagnose → fix** found two faults a perfect validation score had hidden:
+far-away parts read as contamination (the model had learned dirt as "small spots"), and dead
+pixels and sharpening halos read as dirt and dents. The full story, the ablations and every mistake
+the model still makes are in [`REPORT.md`](REPORT.md) ([PDF](REPORT.pdf)).
+
 ## submission.csv
 
-The hidden-test images were not released to participants, so `submission.csv` holds predictions
-for the **200 validation images**. It was made by the three models trained **without** those images
+No hidden-test images were released to participants, so `submission.csv` holds predictions for the
+**200 validation images**. It was made by the three models trained **without** those images
 (`full-v3`, `full-v3-s1`, `full-v3-s2`, same recipe as the final models), so the predictions are
-genuinely held out: macro-F1 **1.000**. Given the hidden-test folder, `python predict.py <folder>`
-writes the file for it with the three final models.
+genuinely held out: macro-F1 **1.000**. Given any folder of images, `python predict.py <folder>`
+writes the same file for it with the three final models.
 
-## Run it in Google Colab
+## Run it in Google Colab (nothing to install)
 
 [**Open DefectLens_colab.ipynb in Colab**](https://colab.research.google.com/github/DAYAANIDHISV/defectlens/blob/main/DefectLens_colab.ipynb):
 downloads the code and the organisers' practice data, shows the shift simulator, trains our recipe and
-the naive baseline, runs the stress test, writes a CSV and draws heat-maps. Choose a T4 GPU runtime,
-then Run all (about 6–8 minutes).
+the naive baseline, runs the stress test, writes a CSV and draws heat-maps. Choose a T4 GPU runtime
+(Runtime → Change runtime type), then Runtime → Run all — about 6–8 minutes.
 
-## Run it
+## Run it on your own computer (macOS or Linux)
 
 ```bash
-python3.14 -m venv .venv && .venv/bin/pip install -r requirements.txt
-curl -L -o models/resnet18-imagenet.pth https://download.pytorch.org/models/resnet18-f37072fd.pth
-# put the organisers' data in data/DefectLens/{train,validation}/<class>/
+git clone https://github.com/DAYAANIDHISV/defectlens.git && cd defectlens
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt     # Python 3.10 or newer
 
-for s in 42 1 2; do                                    # ~2.5 min each on an Apple M3 Pro
+# ResNet18 ImageNet weights, and the organisers' practice data (not redistributed here)
+curl -L -o models/resnet18-imagenet.pth https://download.pytorch.org/models/resnet18-f37072fd.pth
+curl -L -o /tmp/arena.zip https://github.com/sanjai-umashankar/AI-Arena-AIML-Hackathon-2026/raw/main/AI_ARENA_PARTICIPANT.zip
+unzip -q -o /tmp/arena.zip -d /tmp/arena && mkdir -p data && cp -r /tmp/arena/AI_ARENA_PARTICIPANT/PARTICIPANT_PACKAGE/DefectLens data/
+
+# the three final models: ~2.5 minutes each on an Apple M3 Pro or an NVIDIA GPU (much slower on CPU)
+for s in 42 1 2; do
   .venv/bin/python train.py --final --seed $s --name $( [ $s = 42 ] && echo final || echo final-s$s )
 done
-.venv/bin/python predict.py path/to/test_images       # -> submission.csv
-.venv/bin/python app.py                               # inspection station -> http://localhost:8050
+.venv/bin/python app.py                               # the inspection station -> http://localhost:8050
+.venv/bin/python predict.py path/to/images            # a folder of images -> submission.csv
 ```
+
+To repeat the experiments: `train.py --name plain --plain` (the naive baseline),
+`train.py --name full-v3` (our recipe, training photos only), then
+`evaluate.py plain full-v3 --detail full-v3` (stress test, error gallery, calibration).
 
 ## Files
 
@@ -74,12 +111,21 @@ done
 | `shifts.py` | the shift simulator |
 | `model.py` | ResNet18 with a 6-way head |
 | `train.py` | training, `--plain` baseline, `--without <family>` ablations, `--final` |
-| `inference.py` | eight-view averaging, calibration |
+| `inference.py` | test-time averaging over turned, mirrored and zoomed views |
 | `metrics.py` | precision, recall, F1, macro-F1, confusion matrix — by hand |
 | `evaluate.py` | the 29-condition stress test, error gallery, calibration |
 | `explain.py` | Grad-CAM heat-maps |
 | `predict.py` | folder → `submission.csv` |
-| `app.py`, `static/index.html` | the inspection station |
+| `app.py`, `static/index.html` | the inspection station (Flask) |
 | `preview_shifts.py`, `show_heatmaps.py` | the figures in `docs/` |
-| `REPORT.md` | the technical report |
+| `DefectLens_colab.ipynb` | the whole pipeline in Google Colab |
+| `REPORT.md`, `REPORT.pdf` | the technical report |
 | `outputs/` | every stress table, the per-epoch training logs, the error analysis |
+
+## Acknowledgements
+
+- **AI ARENA 2026 / DRESTEIN'26**, Department of Artificial Intelligence and Machine Learning —
+  the DefectLens challenge and its dataset
+  ([challenge repository](https://github.com/sanjai-umashankar/AI-Arena-AIML-Hackathon-2026)).
+  The images belong to the organisers and are not included here.
+- ResNet18 and its ImageNet weights from [torchvision](https://pytorch.org/vision/stable/models.html).
