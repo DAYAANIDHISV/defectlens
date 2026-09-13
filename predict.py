@@ -73,6 +73,8 @@ def predict(images, model_names):
     """Probabilities (count x 6), averaged over the given models."""
     total = 0
     for name in model_names:
+        if not (MODELS_DIR / f"{name}.pt").exists():
+            raise SystemExit(f"models/{name}.pt not found: train it first (README, 'Run it on your own computer').")
         model = load(MODELS_DIR / f"{name}.pt")
         total = total + softmax(raw_scores(model, images, tta=True, zooms=ZOOMS), temperature_for(name))
     return total / len(model_names)

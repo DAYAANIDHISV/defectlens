@@ -37,6 +37,8 @@ from predict import REVIEW_BELOW, ZOOMS, submission_models, temperature_for
 
 # The same models the submission uses (decided in predict.py).
 MODEL_NAMES = submission_models()
+if not all((MODELS_DIR / f"{n}.pt").exists() for n in MODEL_NAMES):
+    raise SystemExit("No trained models yet: train the three final models first (README, 'Run it on your own computer').")
 MODELS = [(name, load(MODELS_DIR / f"{name}.pt"), temperature_for(name)) for name in MODEL_NAMES]
 
 # The disturbances offered on the page. Same functions the stress test uses.
