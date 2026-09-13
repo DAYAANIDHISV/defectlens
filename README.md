@@ -1,8 +1,11 @@
 # DefectLens — robust visual defect inspection
 
-> Built in eight hours at **AI ARENA 2026**, the AI/ML hackathon of **DRESTEIN'26** (17th National
-> Level Intercollegiate Technical and Management Fest), presented by the Department of Artificial
-> Intelligence and Machine Learning. **DefectLens track · Team 18 · SMVEC.**
+> Built in eight hours at **AI ARENA 2026**, the AI/ML hackathon of **DRESTEIN'26** — the 17th
+> National Level Intercollegiate Technical and Management Fest of **Saveetha Engineering College
+> (SEC), Chennai**, presented by its Department of Artificial Intelligence and Machine Learning.
+>
+> **DefectLens track · Team 18 · Sri Manakula Vinayagar Engineering College (SMVEC), Puducherry.**
+>
 > Challenge and data: [sanjai-umashankar/AI-Arena-AIML-Hackathon-2026](https://github.com/sanjai-umashankar/AI-Arena-AIML-Hackathon-2026)
 
 An inspection station for factory parts. Give it a photo and it answers **PASS**, **REJECT** (and
@@ -124,8 +127,8 @@ To repeat the experiments: `train.py --name plain --plain` (the naive baseline),
 
 ## Acknowledgements
 
-- **AI ARENA 2026 / DRESTEIN'26**, Department of Artificial Intelligence and Machine Learning —
-  the DefectLens challenge and its dataset
+- **AI ARENA 2026 / DRESTEIN'26**, Department of Artificial Intelligence and Machine Learning,
+  Saveetha Engineering College, Chennai — the DefectLens challenge and its dataset
   ([challenge repository](https://github.com/sanjai-umashankar/AI-Arena-AIML-Hackathon-2026)).
   The images belong to the organisers and are not included here.
 - ResNet18 and its ImageNet weights from [torchvision](https://pytorch.org/vision/stable/models.html).
