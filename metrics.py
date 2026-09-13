@@ -19,6 +19,7 @@ from config import CLASSES
 
 
 def confusion_matrix(true, pred, n: int = len(CLASSES)) -> np.ndarray:
+    """Count every (true class, answer) pair into a 6 x 6 table."""
     matrix = np.zeros((n, n), dtype=int)
     np.add.at(matrix, (np.asarray(true), np.asarray(pred)), 1)
     return matrix
@@ -36,10 +37,12 @@ def per_class(matrix: np.ndarray):
     return precision, recall, f1
 
 
+# SCORE — macro-F1 (the organisers' metric): F1 for each class, then the plain average
 def macro_f1(true, pred) -> float:
     return float(per_class(confusion_matrix(true, pred))[2].mean())
 
 
+# ACCURACY — the share of answers that are right
 def accuracy(true, pred) -> float:
     return float((np.asarray(true) == np.asarray(pred)).mean())
 

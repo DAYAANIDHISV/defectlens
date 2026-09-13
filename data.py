@@ -42,6 +42,7 @@ def load_image(path) -> np.ndarray:
     return standardise(Image.open(path))
 
 
+# DATA — labels come from the folder names; the ID in the file name (it leaks the class) is never read
 def load_split(split_dir: Path):
     """
     Every image in one split (train or validation), with its label.
@@ -64,10 +65,12 @@ def load_split(split_dir: Path):
 
 
 def load_train():
+    """The 750 training photos (125 per class), with their labels."""
     return load_split(TRAIN_DIR)
 
 
 def load_validation():
+    """The 200 validation photos, with their labels."""
     return load_split(VAL_DIR)
 
 

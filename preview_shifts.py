@@ -29,6 +29,7 @@ COLUMNS = [
 
 
 def main():
+    """Draw the sheet: one part per class, under each disturbance family."""
     images, labels, _ = load_train()
     rng = np.random.default_rng(7)
     size, pad = 128, 16

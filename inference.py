@@ -30,6 +30,7 @@ def to_batch(images) -> torch.Tensor:
     return batch.contiguous().float() / 255.0
 
 
+# TEST-TIME AUGMENTATION — every photo seen 8 ways (turned + mirrored), each also zoomed; answers averaged
 @torch.no_grad()
 def raw_scores(model, images, tta: bool = True, batch: int = 128, zooms=(1.0,)) -> np.ndarray:
     """

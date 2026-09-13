@@ -22,12 +22,14 @@ import torch.nn.functional as F
 from inference import to_batch
 
 
+# HEAT-MAP — Grad-CAM: where on the photo the model looked
 def grad_cam(model, img, class_index=None):
     """A 128x128 map, 0 = ignored, 1 = most important, for one photo and one class."""
     device = next(model.parameters()).device
     store = {}
 
     def keep(_, __, output):
+        """Hook: store layer4's output and ask PyTorch to keep its gradient."""
         output.retain_grad()
         store["maps"] = output
 

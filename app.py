@@ -38,10 +38,11 @@ from predict import REVIEW_BELOW, ZOOMS, submission_models, temperature_for
 # The same models the submission uses (decided in predict.py).
 MODEL_NAMES = submission_models()
 if not all((MODELS_DIR / f"{n}.pt").exists() for n in MODEL_NAMES):
-    raise SystemExit("No trained models yet: train the three final models first (README, 'Run it on your own computer').")
+    raise SystemExit("No trained models yet: train the three final models first (README, 'Run it on another computer').")
 MODELS = [(name, load(MODELS_DIR / f"{name}.pt"), temperature_for(name)) for name in MODEL_NAMES]
 
 # The disturbances offered on the page. Same functions the stress test uses.
+# STRESS-IT BUTTONS — the changes a judge can apply live
 DISTURBANCES = {
     "turn 90°": lambda im, r: shifts.turn90(im, 1),
     "any angle": lambda im, r: shifts.rotate(im, r),
@@ -70,11 +71,12 @@ def data_url(img: np.ndarray) -> str:
 
 
 def probabilities(images) -> np.ndarray:
-    """Eight views (each also zoomed), calibrated, averaged over every loaded model."""
+    """Sixteen views per photo (eight turns and mirrors, each also zoomed), averaged over every loaded model."""
     return sum(softmax(raw_scores(m, images, tta=True, zooms=ZOOMS), t) for _, m, t in MODELS) / len(MODELS)
 
 
 def verdict(label: str, confidence: float) -> str:
+    """PASS / REJECT / REVIEW, from the top class and how sure the models are."""
     if confidence < REVIEW_BELOW:
         return "REVIEW"
     return "PASS" if label == "normal" else "REJECT"
@@ -82,15 +84,18 @@ def verdict(label: str, confidence: float) -> str:
 
 @app.get("/")
 def page():
+    """The station's web page."""
     return send_from_directory(app.static_folder, "index.html")
 
 
 @app.get("/api/info")
 def info():
+    """What the page needs to draw itself: models, classes, the REVIEW line, the stress buttons."""
     return jsonify(models=[{"name": n, "temperature": round(t, 2)} for n, _, t in MODELS],
                    review_below=REVIEW_BELOW, classes=CLASSES, disturbances=list(DISTURBANCES))
 
 
+# PROTOTYPE — one photo in; verdict, probabilities and heat-map out
 @app.post("/api/inspect")
 def inspect():
     """One photo (optionally disturbed first) -> verdict, probabilities, heat-map."""
@@ -130,6 +135,8 @@ def batch():
 def samples():
     """Two validation photos per class, for trying the station without files to hand."""
     images, labels, _ = load_validation()
+    if len(images) == 0:          # the organisers' data is not on this computer: no samples, no error
+        return jsonify([])
     picks = []
     for k, name in enumerate(CLASSES):
         for i in np.flatnonzero(labels == k)[[2, 9]]:

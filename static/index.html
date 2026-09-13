@@ -121,11 +121,31 @@
 </main>
 
 <script>
+/*
+  How this page works
+  -------------------
+  The page never runs the model itself. It sends photos to the Python server
+  (app.py) and draws whatever comes back:
+
+    GET  /api/info     models in use, class names, the REVIEW threshold, the stress buttons
+    GET  /api/samples  two validation photos per class, for the sample buttons
+    POST /api/inspect  one photo (optionally with a "disturb" name) -> verdict,
+                       probabilities, the photo as the model saw it, and its heat-map
+    POST /api/batch    many photos -> one row each, plus submission.csv as text
+
+  State kept in the browser:
+    original  the photo first chosen (so "Back to the original" can restore it)
+    current   the photo as it is now, after any stress buttons (they stack)
+    trail     the names of the stress buttons pressed so far
+    csvText   the last batch's submission.csv, for the download button
+*/
 const $ = (id) => document.getElementById(id);
 let original = null, current = null, trail = [], csvText = "", reviewBelow = 0.6;
 
+// The server sends pictures as text ("data URLs"); this turns one back into a file-like blob.
 async function blobFrom(dataUrl) { return (await fetch(dataUrl)).blob(); }
 
+// Send one photo (and, optionally, which disturbance to apply first) and show the answer.
 async function inspect(blob, disturb) {
   $("viewer-card").classList.add("busy");
   try {
@@ -146,6 +166,7 @@ async function inspect(blob, disturb) {
   }
 }
 
+// Draw the verdict box, the six probability bars, and the trail of stress buttons pressed.
 function showVerdict(d) {
   const v = $("verdict");
   v.className = "verdict " + d.verdict;
@@ -164,11 +185,13 @@ function showVerdict(d) {
   $("reset").disabled = trail.length === 0;
 }
 
+// A new photo: remember it as the original and inspect it untouched.
 async function start(blob) {
   original = blob; trail = [];
   await inspect(blob, null);
 }
 
+// Several photos at once: send them all, then show a summary, a table and the CSV download.
 async function runBatch(files) {
   const images = [...files].filter(f => /\.(png|jpe?g|bmp)$/i.test(f.name));
   if (!images.length) return;
@@ -190,11 +213,13 @@ async function runBatch(files) {
   $("batch-card").scrollIntoView({ behavior: "smooth" });
 }
 
+// One file inspects it; several files run a batch.
 function handleFiles(files) {
   if (!files || !files.length) return;
   if (files.length === 1) start(files[0]); else runBatch(files);
 }
 
+// Wire up the controls: click or drag onto the drop area, pick a folder, reset, download.
 $("drop").onclick = () => $("file").click();
 $("file").onchange = (e) => handleFiles(e.target.files);
 $("folder-btn").onclick = () => $("folder").click();
@@ -210,11 +235,12 @@ $("download").onclick = () => {
   a.click();
 };
 
+// On load: ask the server what it has, then build the stress buttons and the sample buttons.
 (async function init() {
   const info = await (await fetch("/api/info")).json();
   reviewBelow = info.review_below;
-  $("model-info").textContent = "model: " + info.models.map(m => `${m.name} (T=${m.temperature})`).join(" + ")
-    + " · 8-view averaging · heat-maps by Grad-CAM";
+  $("model-info").textContent = "models: " + info.models.map(m => m.name).join(" + ")
+    + " · 16 views per photo · heat-maps by Grad-CAM";
   $("threshold-note").textContent = `Below ${Math.round(reviewBelow * 100)}% confidence the station answers REVIEW instead of guessing: an unsure part goes to a person rather than being passed or scrapped by the machine.`;
   $("stress").innerHTML = info.disturbances.map(n => `<button data-d="${n}" disabled>${n}</button>`).join("");
   document.querySelectorAll("#stress button").forEach(b => b.onclick = async () => {
@@ -223,7 +249,8 @@ $("download").onclick = () => {
     await inspect(current, b.dataset.d);
   });
   const samples = await (await fetch("/api/samples")).json();
-  $("samples").innerHTML = samples.map((s, i) => `<button data-i="${i}" title="${s.class}"><img src="${s.image}" alt="${s.class}">${s.class.replace("_", " ")}</button>`).join("");
+  if (!samples.length) $("samples").textContent = "No sample photos: the organisers' data is not in data/DefectLens on this computer. Drop your own photos above.";
+  $("samples").innerHTML += samples.map((s, i) => `<button data-i="${i}" title="${s.class}"><img src="${s.image}" alt="${s.class}">${s.class.replace("_", " ")}</button>`).join("");
   document.querySelectorAll("#samples button").forEach(b => b.onclick = async () => {
     await start(await blobFrom(samples[+b.dataset.i].image));
     document.querySelectorAll("#stress button").forEach(x => x.disabled = false);

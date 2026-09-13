@@ -35,10 +35,12 @@ from model import load
 
 
 def far_away(img, rng):
+    """The part at 65% of its size, as if photographed from further away."""
     return shifts.rotate(img, rng, angle=0, scale=0.65, shift=(0, 0))
 
 
 def low_resolution(img, rng):
+    """A cheaper camera: shrunk to 40 x 40 pixels and blown back up."""
     small = Image.fromarray(img).resize((40, 40), Image.Resampling.BILINEAR)
     return np.asarray(small.resize((128, 128), Image.Resampling.BILINEAR))
 
@@ -88,6 +90,7 @@ def sharpened(img, rng):
 
 
 def everything(img, rng):
+    """Several changes at once: dark background, turned 90°, warm light, glare and blur."""
     img = shifts.new_background(img, rng, kind="dark")
     img = shifts.turn90(img, 1)
     img = shifts.lighting(img, rng, brightness=0.9, contrast=1.0, gamma=1.0, tint=(1.15, 1.0, 0.8))
@@ -96,6 +99,7 @@ def everything(img, rng):
 
 
 # name, relationship to training, how to make it
+# STRESS TEST — the 29 changed conditions, each scored separately
 CONDITIONS = [
     ("as given", "as given", lambda im, r: im),
     ("turned 90°", "inside range", lambda im, r: shifts.turn90(im, 1)),
@@ -162,6 +166,7 @@ def error_gallery(images, truth, predicted, confidence, where, path, limit=48):
 
 
 def main():
+    """Score every model under every condition, print a summary line each, write the table."""
     parser = argparse.ArgumentParser()
     parser.add_argument("models", nargs="*", help="model names in models/ (default: all)")
     parser.add_argument("--detail", help="one model to analyse in depth")
@@ -182,6 +187,7 @@ def main():
         members = [load(MODELS_DIR / f"{m}.pt") for m in name.split("+")]
 
         def answers(images):
+            """The answer for each photo: probabilities averaged over the member models."""
             return sum(softmax(raw_scores(m, images, tta=args.tta, zooms=args.zooms)) for m in members).argmax(1)
 
         table[name] = {c: macro_f1(labels, answers(stress[c])) for c, _, _ in CONDITIONS}
@@ -211,6 +217,7 @@ def main():
         detail(args.detail, images, labels, stress)
 
 
+# ERROR ANALYSIS + CALIBRATION — confusion matrix, gallery of mistakes, temperature
 def detail(name, images, labels, stress):
     """Error analysis and calibration for one model, with the eight-view averaging on."""
     model = load(MODELS_DIR / f"{name}.pt")

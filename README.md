@@ -75,30 +75,74 @@ No hidden-test images were released to participants, so `submission.csv` holds p
 genuinely held out: macro-F1 **1.000**. Given any folder of images, `python predict.py <folder>`
 writes the same file for it with the three final models.
 
-## Run it in Google Colab (nothing to install)
+## Run it on another computer
 
-[**Open DefectLens_colab.ipynb in Colab**](https://colab.research.google.com/github/DAYAANIDHISV/defectlens/blob/main/DefectLens_colab.ipynb):
+Three ways, from least to most effort. You need **Python 3.10 or newer** for options 2 and 3
+(python.org); a GPU speeds up training but the station runs fine without one.
+
+### Option 1 · Google Colab — nothing to install
+
+[**Open DefectLens_colab.ipynb in Colab**](https://colab.research.google.com/github/DAYAANIDHISV/defectlens/blob/main/DefectLens_colab.ipynb),
+choose Runtime → Change runtime type → **T4 GPU**, then Runtime → **Run all** (about 6–8 minutes). It
 downloads the code and the organisers' practice data, shows the shift simulator, trains our recipe and
-the naive baseline, runs the stress test, writes a CSV and draws heat-maps. Choose a T4 GPU runtime
-(Runtime → Change runtime type), then Runtime → Run all — about 6–8 minutes.
+the naive baseline, runs the stress test, writes a CSV and draws heat-maps.
 
-## Run it on your own computer (macOS or Linux)
+### Option 2 · The inspection station with our trained models — no training, about 5 minutes
+
+The three final models are attached to the [v1.0 release](https://github.com/DAYAANIDHISV/defectlens/releases/tag/v1.0).
+This needs no dataset: drop your own photos onto the page.
+
+macOS / Linux:
 
 ```bash
 git clone https://github.com/DAYAANIDHISV/defectlens.git && cd defectlens
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt     # Python 3.10 or newer
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+for m in final final-s1 final-s2; do
+  curl -L -o models/$m.pt https://github.com/DAYAANIDHISV/defectlens/releases/download/v1.0/$m.pt
+done
+.venv/bin/python app.py                      # then open http://localhost:8050
+.venv/bin/python predict.py path/to/images   # or: a folder of images -> submission.csv
+```
 
-# ResNet18 ImageNet weights, and the organisers' practice data (not redistributed here)
+Windows (PowerShell):
+
+```powershell
+git clone https://github.com/DAYAANIDHISV/defectlens.git; cd defectlens
+py -m venv .venv; .venv\Scripts\pip install -r requirements.txt
+foreach ($m in "final","final-s1","final-s2") {
+  curl.exe -L -o "models\$m.pt" "https://github.com/DAYAANIDHISV/defectlens/releases/download/v1.0/$m.pt"
+}
+.venv\Scripts\python app.py                  # then open http://localhost:8050
+```
+
+### Option 3 · Train everything yourself
+
+Needs the organisers' data (not redistributed here) and the ImageNet starting weights. Each model
+takes about 2.5 minutes on an Apple M3 Pro or an NVIDIA GPU, and much longer on a CPU. For an
+NVIDIA GPU, install PyTorch first with the command from [pytorch.org](https://pytorch.org/get-started/locally/),
+then the requirements.
+
+macOS / Linux, after the first two lines of option 2:
+
+```bash
 curl -L -o models/resnet18-imagenet.pth https://download.pytorch.org/models/resnet18-f37072fd.pth
 curl -L -o /tmp/arena.zip https://github.com/sanjai-umashankar/AI-Arena-AIML-Hackathon-2026/raw/main/AI_ARENA_PARTICIPANT.zip
 unzip -q -o /tmp/arena.zip -d /tmp/arena && mkdir -p data && cp -r /tmp/arena/AI_ARENA_PARTICIPANT/PARTICIPANT_PACKAGE/DefectLens data/
+.venv/bin/python train.py --final --seed 42 --name final
+.venv/bin/python train.py --final --seed 1 --name final-s1
+.venv/bin/python train.py --final --seed 2 --name final-s2
+```
 
-# the three final models: ~2.5 minutes each on an Apple M3 Pro or an NVIDIA GPU (much slower on CPU)
-for s in 42 1 2; do
-  .venv/bin/python train.py --final --seed $s --name $( [ $s = 42 ] && echo final || echo final-s$s )
-done
-.venv/bin/python app.py                               # the inspection station -> http://localhost:8050
-.venv/bin/python predict.py path/to/images            # a folder of images -> submission.csv
+Windows (PowerShell), after the first two lines of option 2:
+
+```powershell
+curl.exe -L -o models\resnet18-imagenet.pth https://download.pytorch.org/models/resnet18-f37072fd.pth
+curl.exe -L -o "$env:TEMP\arena.zip" https://github.com/sanjai-umashankar/AI-Arena-AIML-Hackathon-2026/raw/main/AI_ARENA_PARTICIPANT.zip
+Expand-Archive -Force "$env:TEMP\arena.zip" "$env:TEMP\arena"
+Copy-Item -Recurse "$env:TEMP\arena\AI_ARENA_PARTICIPANT\PARTICIPANT_PACKAGE\DefectLens" data\
+.venv\Scripts\python train.py --final --seed 42 --name final
+.venv\Scripts\python train.py --final --seed 1 --name final-s1
+.venv\Scripts\python train.py --final --seed 2 --name final-s2
 ```
 
 To repeat the experiments: `train.py --name plain --plain` (the naive baseline),

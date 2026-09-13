@@ -26,6 +26,7 @@ IMAGENET_STD = (0.229, 0.224, 0.225)
 PRETRAINED_WEIGHTS = MODELS_DIR / "resnet18-imagenet.pth"
 
 
+# MODEL — ResNet18 pretrained on ImageNet, last layer replaced by a 6-class layer
 class DefectNet(nn.Module):
     def __init__(self, pretrained: bool = True):
         super().__init__()
@@ -53,10 +54,12 @@ def pick_device() -> torch.device:
 
 
 def save(model: DefectNet, path, **info):
+    """Write the learned numbers, plus a note of how they were trained (name, recipe, seed)."""
     torch.save({"state_dict": model.state_dict(), "info": info}, path)
 
 
 def load(path, device=None) -> DefectNet:
+    """Read a saved model back, ready to answer (evaluation mode, on the fastest chip)."""
     checkpoint = torch.load(path, map_location="cpu", weights_only=False)
     model = DefectNet(pretrained=False)
     model.load_state_dict(checkpoint["state_dict"])

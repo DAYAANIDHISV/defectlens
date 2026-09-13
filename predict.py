@@ -4,8 +4,8 @@ predict.py — a folder of photos in, submission.csv out.
     python predict.py path/to/hidden_test_images
     python predict.py path/to/images --models final --out submission.csv
 
-This is the file that runs on the hidden test the moment we have it. For each
-photo: eight views averaged (test-time augmentation), confidences made honest
+For each photo: sixteen views averaged (four turns x mirrored x two zoom levels —
+test-time augmentation) over the three final models, confidence kept honest
 (calibration), and one line written in exactly the organisers' format:
 
     sample_id,predicted_class,confidence
@@ -25,6 +25,7 @@ from data import load_folder
 from inference import raw_scores, softmax
 from model import load
 
+# REVIEW THRESHOLD — below 60% sure, the station says REVIEW instead of guessing
 REVIEW_BELOW = 0.60   # the demo sends anything less sure than this to a person
 
 # Views averaged per photo: eight turns/mirrors, each also magnified 1.3x from the
@@ -38,6 +39,7 @@ ZOOMS = (1.0, 1.3)
 # Three copies of the final recipe with different random seeds: across seeds the
 # stress average is 0.990 +/- 0.002 but the half-size case swings 0.78-0.93, and
 # the three together lift the worst stress condition from 0.965 to 0.980.
+# SUBMISSION — the three final models that vote
 SUBMISSION_MODELS = ["final", "final-s1", "final-s2"]
 
 
@@ -50,6 +52,7 @@ def submission_models():
 FINAL_TWIN = "full-v3"   # the same recipe as the final model, trained on the training photos only
 
 
+# CALIBRATION RULE — confidence may only go down, never up
 def temperature_for(name: str) -> float:
     """
     The calibration number for a model. A final model (trained on everything)
@@ -74,13 +77,15 @@ def predict(images, model_names):
     total = 0
     for name in model_names:
         if not (MODELS_DIR / f"{name}.pt").exists():
-            raise SystemExit(f"models/{name}.pt not found: train it first (README, 'Run it on your own computer').")
+            raise SystemExit(f"models/{name}.pt not found: train it first (README, 'Run it on another computer').")
         model = load(MODELS_DIR / f"{name}.pt")
         total = total + softmax(raw_scores(model, images, tta=True, zooms=ZOOMS), temperature_for(name))
     return total / len(model_names)
 
 
+# CSV — writes sample_id,predicted_class,confidence in the organisers' format
 def main():
+    """Folder in, submission.csv out — plus a count per class and how many fall below the REVIEW line."""
     parser = argparse.ArgumentParser()
     parser.add_argument("folder")
     parser.add_argument("--models", nargs="+", default=submission_models())

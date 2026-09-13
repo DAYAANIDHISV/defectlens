@@ -75,6 +75,7 @@ def predict_batchwise(model, images, device, batch=128):
 
 
 def main():
+    """Read the options, build the data and the model, run the training loop, save the result."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", required=True)
     parser.add_argument("--epochs", type=int, default=30)
@@ -99,10 +100,12 @@ def main():
         train_images = train_images + val_images
         train_labels = np.concatenate([train_labels, val_labels])
 
+    # TRAINING DATA — batches of 32 photos, each disturbed by the shift simulator
     loader = DataLoader(Parts(train_images, train_labels, families, args.seed), batch_size=args.batch, shuffle=True,
                         num_workers=args.workers, persistent_workers=args.workers > 0,
                         worker_init_fn=give_each_worker_its_own_dice, drop_last=True)
 
+    # MODEL + OPTIMISER — pretrained ResNet18, AdamW (learning rate 5e-4, weight decay 1e-4)
     model = DefectNet(pretrained=True).to(device)
     optimiser = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     steps = args.epochs * len(loader)
@@ -112,23 +115,26 @@ def main():
                                                    pct_start=0.1, anneal_strategy="cos")
     # Label smoothing: aim for 90% sure instead of 100%. Stops the model becoming
     # over-confident, which matters because we report a confidence for every answer.
+    # LOSS — cross-entropy with label smoothing 0.1
     loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
 
     print(f"[{args.name}] device={device} images={len(train_images)} families={families or 'none'} epochs={args.epochs}")
     log = []
     started = time.time()
+    # TRAINING LOOP — each batch: predict → loss → backward → optimiser step; 30 epochs
     for epoch in range(1, args.epochs + 1):
         model.train()
         total, seen = 0.0, 0
-        for x, y in loader:
-            x, y = x.to(device), y.to(device)
-            loss = loss_fn(model(x), y)
-            optimiser.zero_grad()
-            loss.backward()
-            optimiser.step()
-            schedule.step()
+        for x, y in loader:                        # one batch of 32 disturbed photos and their labels
+            x, y = x.to(device), y.to(device)      # move them to the graphics chip
+            loss = loss_fn(model(x), y)            # 1. answer, and measure how wrong the answers were
+            optimiser.zero_grad()                  # 2. clear the previous batch's adjustments
+            loss.backward()                        # 3. work out which way to nudge every weight
+            optimiser.step()                       # 4. nudge them (AdamW)
+            schedule.step()                        # 5. move the learning rate along its curve
             total += loss.item() * len(y)
             seen += len(y)
+        # VALIDATION — macro-F1 on the 200 held-out photos after every epoch
         val_f1 = macro_f1(val_labels, predict_batchwise(model, val_images, device))
         log.append({"epoch": epoch, "train_loss": total / seen, "val_macro_f1": val_f1})
         print(f"  epoch {epoch:2d}  loss {total / seen:.3f}  validation macro-F1 {val_f1:.3f}"

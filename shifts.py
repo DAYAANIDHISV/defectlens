@@ -285,6 +285,7 @@ def low_quality(img, rng, quality=None):
 FAMILIES = ("orientation", "lighting", "background", "occlusion", "camera")
 
 
+# AUGMENTATION — every training photo passes through simulate(): orientation, lighting, background, glare, camera
 def simulate(img, rng, families=FAMILIES, mask=None):
     """
     The training-time disturbance. Each family fires with some probability, so

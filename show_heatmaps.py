@@ -20,6 +20,7 @@ from model import load
 
 
 def main(name="full"):
+    """Draw photo + heat-map pairs, two per class, for the named model."""
     model = load(MODELS_DIR / f"{name}.pt")
     images, labels, _ = load_validation()
     size, cap = 128, 16
