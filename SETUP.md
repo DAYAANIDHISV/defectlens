@@ -153,7 +153,7 @@ If Windows asks whether Python may use the network, click **Allow**. Then open y
 
 **Need photos to try?** Download the organisers' practice package:
 **https://github.com/sanjai-umashankar/AI-Arena-AIML-Hackathon-2026/raw/main/AI_ARENA_PARTICIPANT.zip**,
-unzip it, and use any image from `PARTICIPANT_PACKAGE/DefectLens/validation/`. If you copy that whole
+unzip it, and use any image from `AI_ARENA_PARTICIPANT/PARTICIPANT_PACKAGE/DefectLens/validation/`. If you copy that whole
 **DefectLens** folder into the project's **data** folder (create it), the station's sample buttons appear
 too.
 
